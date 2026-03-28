@@ -1,0 +1,1597 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hukuk AI — Avukat Paneli</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy:    #0f1e3c;
+  --navy2:   #162847;
+  --gold:    #c8a45a;
+  --gold2:   #e8c47a;
+  --cream:   #f8f5ef;
+  --white:   #ffffff;
+  --muted:   #8a94a8;
+  --border:  rgba(200,164,90,0.18);
+  --success: #1a7a50;
+  --danger:  #c0392b;
+  --warn:    #b87333;
+  --r:       10px;
+  --shadow:  0 4px 24px rgba(15,30,60,0.13);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--navy);min-height:100vh}
+
+/* ── Yükleme ekranı ── */
+#splash{position:fixed;inset:0;background:var(--navy);display:flex;align-items:center;justify-content:center;z-index:999;transition:opacity .5s}
+#splash.hide{opacity:0;pointer-events:none}
+.splash-logo{text-align:center;animation:fadeUp .6s ease}
+.splash-logo h1{font-family:'Playfair Display',serif;color:var(--gold);font-size:2.8rem;letter-spacing:2px}
+.splash-logo p{color:rgba(255,255,255,.5);margin-top:8px;letter-spacing:3px;font-size:.75rem;text-transform:uppercase}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── Giriş Ekranı ── */
+#login-screen{display:none;min-height:100vh;background:var(--navy);align-items:center;justify-content:center}
+#login-screen.active{display:flex}
+.login-wrap{width:100%;max-width:420px;padding:24px}
+.login-brand{text-align:center;margin-bottom:40px}
+.login-brand h1{font-family:'Playfair Display',serif;color:var(--gold);font-size:2.2rem}
+.login-brand p{color:var(--muted);margin-top:6px;font-size:.85rem;letter-spacing:2px;text-transform:uppercase}
+.login-card{background:var(--navy2);border:1px solid var(--border);border-radius:16px;padding:32px}
+.tab-row{display:flex;gap:4px;margin-bottom:28px;background:rgba(255,255,255,.05);border-radius:8px;padding:4px}
+.tab-btn{flex:1;padding:8px;border:none;background:transparent;color:var(--muted);cursor:pointer;border-radius:6px;font-size:.9rem;font-family:'DM Sans',sans-serif;transition:.2s}
+.tab-btn.active{background:var(--gold);color:var(--navy);font-weight:600}
+.field{margin-bottom:18px}
+.field label{display:block;font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:7px}
+.field input{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:12px 14px;color:var(--white);font-size:.95rem;font-family:'DM Sans',sans-serif;transition:.2s;outline:none}
+.field input:focus{border-color:var(--gold);background:rgba(200,164,90,.08)}
+.field input::placeholder{color:rgba(255,255,255,.25)}
+.btn-gold{width:100%;padding:14px;background:var(--gold);border:none;border-radius:8px;color:var(--navy);font-weight:700;font-size:1rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;letter-spacing:.5px}
+.btn-gold:hover{background:var(--gold2)}
+.btn-gold:disabled{opacity:.6;cursor:not-allowed}
+.form-error{background:rgba(192,57,43,.15);border:1px solid rgba(192,57,43,.3);border-radius:6px;padding:10px 14px;color:#e88;font-size:.85rem;margin-bottom:16px;display:none}
+.form-error.show{display:block}
+
+/* ── Ana layout ── */
+#app{display:none}
+#app.active{display:flex;min-height:100vh}
+
+/* ── Sidebar ── */
+.sidebar{width:240px;min-height:100vh;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0;position:sticky;top:0;height:100vh}
+.sidebar-brand{padding:28px 20px 20px;border-bottom:1px solid var(--border)}
+.sidebar-brand h2{font-family:'Playfair Display',serif;color:var(--gold);font-size:1.4rem}
+.sidebar-brand p{color:var(--muted);font-size:.72rem;letter-spacing:2px;text-transform:uppercase;margin-top:3px}
+.sidebar-user{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.avatar{width:36px;height:36px;background:var(--gold);border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;color:var(--navy);font-size:.85rem;flex-shrink:0}
+.sidebar-user-info{overflow:hidden}
+.sidebar-user-info strong{color:var(--white);font-size:.85rem;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-user-info span{color:var(--muted);font-size:.72rem}
+nav{flex:1;padding:12px 10px;overflow-y:auto}
+.nav-section{font-size:.65rem;letter-spacing:2px;text-transform:uppercase;color:rgba(138,148,168,.5);padding:10px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 10px;border-radius:8px;cursor:pointer;transition:.15s;color:var(--muted);font-size:.9rem;margin-bottom:2px;border:none;background:transparent;width:100%;text-align:left;font-family:'DM Sans',sans-serif}
+.nav-item:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.nav-item.active{background:rgba(200,164,90,.15);color:var(--gold)}
+.nav-item .icon{font-size:1rem;width:20px;text-align:center}
+.notification-badge{margin-left:auto;background:var(--danger);color:#fff;font-size:.65rem;font-weight:700;padding:2px 6px;border-radius:10px}
+.sidebar-bottom{padding:16px 10px;border-top:1px solid var(--border)}
+.logout-btn{display:flex;align-items:center;gap:10px;padding:10px;border-radius:8px;cursor:pointer;color:var(--muted);font-size:.9rem;background:transparent;border:none;width:100%;font-family:'DM Sans',sans-serif;transition:.15s}
+.logout-btn:hover{color:var(--danger);background:rgba(192,57,43,.1)}
+
+/* ── İçerik alanı ── */
+.main{flex:1;overflow-y:auto;background:var(--cream)}
+.page{display:none;padding:32px;max-width:1000px}
+.page.active{display:block}
+.page-header{margin-bottom:28px}
+.page-header h1{font-family:'Playfair Display',serif;font-size:1.8rem;color:var(--navy)}
+.page-header p{color:var(--muted);margin-top:6px;font-size:.9rem}
+
+/* ── Kartlar ── */
+.card{background:var(--white);border-radius:var(--r);border:1px solid rgba(15,30,60,.08);box-shadow:var(--shadow);padding:24px;margin-bottom:20px}
+.card-title{font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+
+/* ── Dashboard ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:24px}
+.stat-card{background:var(--white);border-radius:var(--r);padding:20px;border:1px solid rgba(15,30,60,.07);box-shadow:var(--shadow);text-align:center}
+.stat-card .num{font-family:'Playfair Display',serif;font-size:2rem;color:var(--navy);font-weight:700}
+.stat-card .lbl{color:var(--muted);font-size:.78rem;margin-top:4px;text-transform:uppercase;letter-spacing:1px}
+.gazette-feed{display:flex;flex-direction:column;gap:10px}
+.gazette-item{display:flex;align-items:flex-start;gap:14px;padding:14px 16px;background:var(--white);border-radius:8px;border:1px solid rgba(15,30,60,.07);cursor:pointer;transition:.15s}
+.gazette-item:hover{border-color:var(--gold);transform:translateY(-1px)}
+.gazette-dot{width:8px;height:8px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:6px}
+.gazette-dot.new{background:var(--success);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.gazette-cat{font-size:.68rem;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:3px}
+.gazette-title{font-size:.9rem;color:var(--navy);font-weight:500}
+.gazette-meta{font-size:.75rem;color:var(--muted);margin-top:3px}
+
+/* ── Dilekçe oluşturma ── */
+.type-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px}
+.type-card{padding:18px;border-radius:var(--r);border:2px solid transparent;cursor:pointer;transition:.2s;background:var(--white);box-shadow:var(--shadow)}
+.type-card:hover{border-color:var(--gold);transform:translateY(-2px)}
+.type-card.selected{border-color:var(--gold);background:rgba(200,164,90,.06)}
+.type-emoji{font-size:1.6rem;margin-bottom:8px}
+.type-name{font-weight:600;font-size:.95rem;color:var(--navy)}
+.type-desc{font-size:.78rem;color:var(--muted);margin-top:3px}
+.input-area{width:100%;min-height:120px;border:1.5px solid rgba(15,30,60,.12);border-radius:var(--r);padding:14px;font-size:.95rem;font-family:'DM Sans',sans-serif;color:var(--navy);resize:vertical;outline:none;transition:.2s;background:var(--white)}
+.input-area:focus{border-color:var(--gold)}
+.generate-btn{padding:14px 32px;background:var(--navy);color:var(--gold);border:none;border-radius:8px;font-size:1rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;display:flex;align-items:center;gap:8px;letter-spacing:.5px}
+.generate-btn:hover{background:var(--navy2)}
+.generate-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* ── Streaming output ── */
+.output-box{background:var(--white);border-radius:var(--r);border:1px solid rgba(200,164,90,.2);padding:24px;margin-top:20px;display:none}
+.output-box.show{display:block}
+.output-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid rgba(15,30,60,.07)}
+.output-header h3{font-family:'Playfair Display',serif;font-size:1.1rem}
+.output-actions{display:flex;gap:8px}
+.btn-sm{padding:7px 14px;border-radius:6px;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;border:1.5px solid}
+.btn-outline{background:transparent;border-color:var(--navy);color:var(--navy)}
+.btn-outline:hover{background:var(--navy);color:var(--white)}
+.btn-primary-sm{background:var(--gold);border-color:var(--gold);color:var(--navy)}
+.btn-primary-sm:hover{background:var(--gold2)}
+#petition-text{font-family:Georgia,serif;font-size:.9rem;line-height:1.9;color:#1a2238;white-space:pre-wrap;min-height:200px}
+.cursor{display:inline-block;width:2px;height:1em;background:var(--gold);animation:blink .7s infinite;vertical-align:text-bottom;margin-left:2px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.decree-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(15,30,60,.07)}
+.decree-tag{font-size:.72rem;padding:3px 10px;background:rgba(200,164,90,.1);color:var(--navy);border-radius:20px;border:1px solid rgba(200,164,90,.3)}
+.warning-box{background:rgba(184,115,51,.08);border:1px solid rgba(184,115,51,.25);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:.83rem;color:var(--warn)}
+
+/* ── Kararname arama ── */
+.search-bar{display:flex;gap:10px;margin-bottom:20px}
+.search-input{flex:1;padding:11px 16px;border:1.5px solid rgba(15,30,60,.12);border-radius:8px;font-size:.95rem;font-family:'DM Sans',sans-serif;outline:none;transition:.2s}
+.search-input:focus{border-color:var(--gold)}
+.search-btn{padding:11px 20px;background:var(--navy);color:var(--gold);border:none;border-radius:8px;cursor:pointer;font-weight:600;font-family:'DM Sans',sans-serif;transition:.2s}
+.search-btn:hover{background:var(--navy2)}
+.filter-row{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.filter-chip{padding:6px 14px;border-radius:20px;border:1.5px solid rgba(15,30,60,.12);background:transparent;font-size:.8rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:.2s;color:var(--navy)}
+.filter-chip:hover,.filter-chip.active{background:var(--navy);color:var(--gold);border-color:var(--navy)}
+.decree-list{display:flex;flex-direction:column;gap:10px}
+.decree-card{background:var(--white);border-radius:var(--r);border:1px solid rgba(15,30,60,.07);padding:18px;cursor:pointer;transition:.2s}
+.decree-card:hover{border-color:var(--gold);box-shadow:var(--shadow)}
+.decree-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px}
+.decree-card-title{font-weight:600;font-size:.9rem;flex:1;margin-right:12px}
+.decree-date{font-size:.75rem;color:var(--muted);white-space:nowrap}
+.decree-excerpt{font-size:.82rem;color:var(--muted);line-height:1.6}
+.decree-footer{display:flex;gap:8px;margin-top:10px}
+.cat-badge{font-size:.68rem;padding:3px 10px;border-radius:20px;font-weight:600;background:rgba(200,164,90,.1);color:var(--gold);border:1px solid rgba(200,164,90,.2)}
+.sim-bar-wrap{flex:1;display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.sim-bar{height:4px;border-radius:2px;background:var(--gold)}
+.sim-label{font-size:.72rem;color:var(--muted);white-space:nowrap}
+
+/* ── Geçmiş ── */
+.history-table{width:100%;border-collapse:collapse}
+.history-table th{text-align:left;font-size:.72rem;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);padding:10px 14px;border-bottom:2px solid rgba(15,30,60,.07)}
+.history-table td{padding:13px 14px;border-bottom:1px solid rgba(15,30,60,.06);font-size:.88rem;vertical-align:middle}
+.history-table tr:hover td{background:rgba(200,164,90,.04)}
+.status-pill{display:inline-block;padding:3px 10px;border-radius:20px;font-size:.72rem;font-weight:600}
+.status-draft{background:rgba(184,115,51,.1);color:var(--warn)}
+.status-done{background:rgba(26,122,80,.1);color:var(--success)}
+.action-link{color:var(--gold);cursor:pointer;font-weight:600;background:none;border:none;font-family:'DM Sans',sans-serif;font-size:.88rem;padding:0}
+.action-link:hover{text-decoration:underline}
+
+/* ── PDF önizleme modal ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(15,30,60,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.show{display:flex}
+.modal{background:var(--white);border-radius:16px;width:100%;max-width:720px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(15,30,60,.3)}
+.modal-header{display:flex;justify-content:space-between;align-items:center;padding:20px 24px;border-bottom:1px solid rgba(15,30,60,.08)}
+.modal-header h3{font-family:'Playfair Display',serif;font-size:1.1rem}
+.modal-close{background:transparent;border:none;font-size:1.4rem;cursor:pointer;color:var(--muted);padding:4px}
+.modal-close:hover{color:var(--navy)}
+.modal-body{flex:1;overflow-y:auto;padding:28px}
+.modal-footer{padding:16px 24px;border-top:1px solid rgba(15,30,60,.08);display:flex;gap:10px;justify-content:flex-end}
+.petition-preview{font-family:Georgia,serif;font-size:.88rem;line-height:2;color:#1a2238;white-space:pre-wrap}
+
+/* ── Revizyon ── */
+.revise-input{width:100%;border:1.5px solid rgba(15,30,60,.12);border-radius:8px;padding:12px;font-size:.9rem;font-family:'DM Sans',sans-serif;min-height:80px;resize:vertical;outline:none;transition:.2s;margin-top:12px}
+.revise-input:focus{border-color:var(--gold)}
+
+/* ── Toast ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--navy);color:var(--white);padding:12px 20px;border-radius:8px;font-size:.88rem;z-index:200;transform:translateY(80px);opacity:0;transition:.3s;border-left:3px solid var(--gold)}
+.toast.show{transform:translateY(0);opacity:1}
+
+/* ── Loading spinner ── */
+.spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(200,164,90,.3);border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── Responsive ── */
+@media(max-width:700px){
+  .sidebar{width:200px}
+  .type-grid{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<!-- Splash -->
+<div id="splash">
+  <div class="splash-logo">
+    <h1>⚖ Hukuk AI</h1>
+    <p>Avukat Paneli</p>
+  </div>
+</div>
+
+<!-- Giriş -->
+<div id="login-screen">
+  <div class="login-wrap">
+    <div class="login-brand">
+      <h1>⚖ Hukuk AI</h1>
+      <p>Avukat Paneli</p>
+    </div>
+    <div class="login-card">
+      <div class="tab-row">
+        <button class="tab-btn active" onclick="switchTab('login')">Giriş</button>
+        <button class="tab-btn" onclick="switchTab('register')">Kayıt</button>
+      </div>
+      <div id="form-error" class="form-error"></div>
+
+      <!-- Giriş formu -->
+      <div id="login-form">
+        <div class="field"><label>E-Posta</label><input type="email" id="login-email" placeholder="av@baro.com"></div>
+        <div class="field"><label>Şifre</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+        <button class="btn-gold" id="login-btn" onclick="handleLogin()">Giriş Yap</button>
+      </div>
+
+      <!-- Kayıt formu -->
+      <div id="register-form" style="display:none">
+        <div class="field"><label>Ad Soyad</label><input type="text" id="reg-name" placeholder="Av. Adınız Soyadınız"></div>
+        <div class="field"><label>E-Posta</label><input type="email" id="reg-email" placeholder="av@baro.com"></div>
+        <div class="field"><label>Şifre</label><input type="password" id="reg-pass" placeholder="En az 8 karakter"></div>
+        <div class="field"><label>Baro Sicil No</label><input type="text" id="reg-bar" placeholder="12345"></div>
+        <div class="field"><label>Baro</label><input type="text" id="reg-baro" placeholder="İstanbul"></div>
+        <button class="btn-gold" id="reg-btn" onclick="handleRegister()">Kayıt Ol</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ana uygulama -->
+<div id="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <h2>⚖ Hukuk AI</h2>
+      <p>Avukat Paneli</p>
+    </div>
+    <div class="sidebar-user">
+      <div class="avatar" id="user-avatar">AV</div>
+      <div class="sidebar-user-info">
+        <strong id="user-name">Avukat</strong>
+        <span>Aktif</span>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-section">Genel</div>
+      <button class="nav-item active" onclick="showPage('dashboard')">
+        <span class="icon">◉</span> Dashboard
+        <span class="notification-badge" id="notif-badge" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('new-petition')">
+        <span class="icon">✦</span> Yeni Dilekçe
+      </button>
+      <div class="nav-section">Araçlar</div>
+      <button class="nav-item" onclick="showPage('decree-search')">
+        <span class="icon">⊞</span> Kararname Ara
+      </button>
+      <button class="nav-item" onclick="showPage('history')">
+        <span class="icon">≡</span> Geçmiş
+      </button>
+      <button class="nav-item" onclick="showPage('notifications')">
+        <span class="icon">🔔</span> Bildirimler
+        <span class="notification-badge" id="notif-badge-side" style="display:none">0</span>
+      </button>
+      <button class="nav-item" onclick="showPage('cases')">
+        <span class="icon">📁</span> Davalar
+      </button>
+      <button class="nav-item" onclick="showPage('deadlines')">
+        <span class="icon">⏰</span> Süre Takibi
+        <span class="notification-badge" id="deadline-badge" style="display:none">!</span>
+      </button>
+      <button class="nav-item" onclick="showPage('strategy')">
+        <span class="icon">🎯</span> Strateji Asistanı
+      </button>
+      <button class="nav-item" onclick="showPage('preferences')">
+        <span class="icon">⚙</span> Tercihler
+      </button>
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="logout-btn" onclick="handleLogout()">
+        <span class="icon">↩</span> Çıkış Yap
+      </button>
+    </div>
+  </aside>
+
+  <!-- İçerik -->
+  <main class="main">
+
+    <!-- Dashboard -->
+    <div class="page active" id="page-dashboard">
+      <div class="page-header">
+        <h1 id="greeting-text">Günaydın</h1>
+        <p>Bugünün Resmi Gazete yayınları ve son aktiviteler</p>
+      </div>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="num" id="stat-total">—</div><div class="lbl">Toplam Dilekçe</div></div>
+        <div class="stat-card"><div class="num" id="stat-today">—</div><div class="lbl">Bu Ay</div></div>
+        <div class="stat-card"><div class="num" id="stat-decrees">—</div><div class="lbl">Kararname</div></div>
+        <div class="stat-card"><div class="num" id="stat-chunks">—</div><div class="lbl">Madde/Bent</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">Bugünkü Resmi Gazete — Yeni Yayınlar</div>
+        <div class="gazette-feed" id="gazette-feed">
+          <div style="color:var(--muted);font-size:.88rem;padding:10px 0">Yükleniyor...</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Son Dilekçeler</div>
+        <div id="recent-petitions">
+          <div style="color:var(--muted);font-size:.88rem;padding:10px 0">Yükleniyor...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Yeni Dilekçe -->
+    <div class="page" id="page-new-petition">
+      <div class="page-header">
+        <h1>Yeni Dilekçe</h1>
+        <p>Dilekçe türünü seçin veya belge yükleyerek analiz yaptırın</p>
+      </div>
+
+      <!-- Sekme -->
+      <div class="tab-row" style="margin-bottom:20px;background:var(--white);border:1px solid var(--border)">
+        <button class="tab-btn active" id="tab-write" onclick="switchPetitionTab('write')">✦ Dilekçe Yaz</button>
+        <button class="tab-btn" id="tab-analyze" onclick="switchPetitionTab('analyze')">📄 Belge Analizi</button>
+      </div>
+
+      <!-- Dilekçe Yaz -->
+      <div id="panel-write">
+        <div class="card">
+          <div class="card-title">DİLEKÇE TÜRÜ SEÇİN</div>
+          <div style="margin-bottom:10px">
+            <span style="font-size:.75rem;color:var(--muted);font-weight:600;letter-spacing:1px">TEMEL TÜRLER</span>
+          </div>
+          <div class="type-grid" id="type-grid-basic"></div>
+          <div style="margin:14px 0 10px">
+            <span style="font-size:.75rem;color:var(--muted);font-weight:600;letter-spacing:1px">ÖZEL DAVALAR</span>
+          </div>
+          <div class="type-grid" id="type-grid-special"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">TALEBİNİZİ YAZIN</div>
+          <textarea class="input-area" id="talep-input" placeholder="Müvekkilinizin durumunu ve talebinizi detaylıca açıklayın..."></textarea>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+            <span id="char-count" style="font-size:.78rem;color:var(--muted)">0 karakter</span>
+            <button class="generate-btn" id="gen-btn" onclick="generatePetition()">
+              <span id="gen-btn-text">Dilekçeyi Oluştur</span>
+              <span id="gen-spinner" class="spinner" style="display:none"></span>
+            </button>
+          </div>
+        </div>
+        <div class="output-box" id="output-box">
+          <div class="output-header">
+            <h3>Oluşturulan Dilekçe</h3>
+            <div class="output-actions">
+              <button class="btn-sm btn-outline" onclick="openRevise()">Revize Et</button>
+              <button class="btn-sm btn-outline" onclick="copyPetition()">Kopyala</button>
+              <button class="btn-sm btn-primary-sm" onclick="printPetition()">PDF İndir</button>
+            </div>
+          </div>
+          <div id="warning-area"></div>
+          <div id="petition-text"></div>
+          <div class="decree-tags" id="decree-tags"></div>
+          <div style="margin-top:14px" id="cost-area"></div>
+        </div>
+      </div>
+
+      <!-- Belge Analizi -->
+      <div id="panel-analyze" style="display:none">
+        <div class="card">
+          <div class="card-title">ANALİZ TÜRÜ</div>
+          <div class="type-grid">
+            <div class="type-card selected" onclick="selectAnalysisType('karsi_dilekce',this)">
+              <div class="type-emoji">⚔️</div>
+              <div class="type-name">Karşı Dilekçe</div>
+              <div class="type-desc">Analiz ve itiraz yazma</div>
+            </div>
+            <div class="type-card" onclick="selectAnalysisType('sozlesme',this)">
+              <div class="type-emoji">📝</div>
+              <div class="type-name">Sözleşme</div>
+              <div class="type-desc">Risk ve ihlal analizi</div>
+            </div>
+            <div class="type-card" onclick="selectAnalysisType('mahkeme_karari',this)">
+              <div class="type-emoji">⚖️</div>
+              <div class="type-name">Mahkeme Kararı</div>
+              <div class="type-desc">İstinaf/temyiz dilekçesi</div>
+            </div>
+            <div class="type-card" onclick="selectAnalysisType('fatura_belge',this)">
+              <div class="type-emoji">🧾</div>
+              <div class="type-name">Fatura/Belge</div>
+              <div class="type-desc">İcra takip dilekçesi</div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">BELGE YÜKLE (PDF, DOCX veya TXT)</div>
+          <div id="drop-zone" style="border:2px dashed var(--border);border-radius:var(--r);padding:32px;text-align:center;cursor:pointer;transition:.2s"
+               onclick="document.getElementById('file-input').click()"
+               ondragover="event.preventDefault();this.style.borderColor='var(--gold)'"
+               ondragleave="this.style.borderColor='var(--border)'"
+               ondrop="handleFileDrop(event)">
+            <div style="font-size:2rem;margin-bottom:8px">📂</div>
+            <div style="font-weight:500;color:var(--navy)">Dosyayı buraya sürükleyin</div>
+            <div style="font-size:.82rem;color:var(--muted);margin-top:4px">veya tıklayarak seçin — PDF, DOCX, TXT (max 10MB)</div>
+            <div id="file-name" style="margin-top:10px;font-size:.85rem;color:var(--gold);font-weight:600"></div>
+          </div>
+          <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt" style="display:none" onchange="handleFileSelect(this)">
+          <div style="margin-top:14px">
+            <div class="card-title">EK TALİMAT (isteğe bağlı)</div>
+            <textarea class="input-area" id="analyze-talep" style="min-height:70px"
+              placeholder="Özel talep veya dikkat edilmesini istediğiniz noktalar..."></textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:14px">
+            <button class="generate-btn" id="analyze-btn" onclick="analyzeDocument()">
+              <span id="analyze-btn-text">Belgeyi Analiz Et</span>
+              <span id="analyze-spinner" class="spinner" style="display:none"></span>
+            </button>
+          </div>
+        </div>
+        <div class="output-box" id="analyze-output-box">
+          <div class="output-header">
+            <h3 id="analyze-output-title">Analiz Sonucu</h3>
+            <div class="output-actions">
+              <button class="btn-sm btn-outline" onclick="copyAnalysis()">Kopyala</button>
+              <button class="btn-sm btn-primary-sm" onclick="printAnalysis()">PDF İndir</button>
+            </div>
+          </div>
+          <div id="analyze-output-text" style="font-family:Georgia,serif;font-size:.9rem;line-height:1.9;white-space:pre-wrap"></div>
+          <div style="margin-top:12px" id="analyze-cost-area"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Kararname Arama -->
+    <div class="page" id="page-decree-search">
+      <div class="page-header">
+        <h1>Kararname Ara</h1>
+        <p>Semantik arama ile ilgili kanun ve maddeleri bulun</p>
+      </div>
+      <div class="card">
+        <div class="search-bar">
+          <input class="search-input" id="search-input" placeholder="örn: iş sözleşmesi feshi, kira artışı, ihbar tazminatı..." onkeydown="if(event.key==='Enter')searchDecrees()">
+          <button class="search-btn" onclick="searchDecrees()">Ara</button>
+        </div>
+        <div class="filter-row" id="category-filters">
+          <button class="filter-chip active" onclick="filterCategory('',this)">Tümü</button>
+          <button class="filter-chip" onclick="filterCategory('İş Hukuku',this)">İş Hukuku</button>
+          <button class="filter-chip" onclick="filterCategory('Vergi Hukuku',this)">Vergi</button>
+          <button class="filter-chip" onclick="filterCategory('İdare Hukuku',this)">İdare</button>
+          <button class="filter-chip" onclick="filterCategory('Ceza Hukuku',this)">Ceza</button>
+          <button class="filter-chip" onclick="filterCategory('İcra Hukuku',this)">İcra</button>
+          <button class="filter-chip" onclick="filterCategory('Medeni Hukuk',this)">Medeni</button>
+          <button class="filter-chip" onclick="filterCategory('Anayasa',this)">Anayasa</button>
+        </div>
+        <div class="decree-list" id="decree-list">
+          <div style="color:var(--muted);font-size:.88rem;padding:20px 0;text-align:center">
+            Kararname aramak için yukarıya yazın
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Geçmiş -->
+    <div class="page" id="page-history">
+      <div class="page-header">
+        <h1>Dilekçe Geçmişi</h1>
+        <p>Tüm oluşturulan dilekçeleriniz</p>
+      </div>
+      <div class="card" style="padding:0;overflow:hidden">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Konu</th>
+              <th>Tür</th>
+              <th>Tarih</th>
+              <th>Durum</th>
+              <th>İşlem</th>
+            </tr>
+          </thead>
+          <tbody id="history-tbody">
+            <tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Yükleniyor...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bildirimler -->
+    <div class="page" id="page-notifications">
+      <div class="page-header">
+        <h1>Bildirimler</h1>
+        <p>Yeni kararname ve yasal gelişme uyarıları</p>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px">
+        <button class="btn-sm btn-outline" onclick="markAllRead()">Tümünü okundu işaretle</button>
+      </div>
+      <div id="notif-list">
+        <div style="color:var(--muted);text-align:center;padding:40px">Yükleniyor...</div>
+      </div>
+    </div>
+
+    <!-- Tercihler -->
+    <div class="page" id="page-preferences">
+      <div class="page-header">
+        <h1>Bildirim Tercihleri</h1>
+        <p>Hangi kategorilerde bildirim almak istediğinizi seçin</p>
+      </div>
+      <div class="card">
+        <div class="card-title">TAKİP EDİLEN KATEGORİLER</div>
+        <p style="font-size:.85rem;color:var(--muted);margin-bottom:16px">Boş bırakırsanız tüm kategorilerden bildirim alırsınız.</p>
+        <div class="filter-row" id="pref-categories">
+          <button class="filter-chip" onclick="togglePrefCat('İş Hukuku',this)">İş Hukuku</button>
+          <button class="filter-chip" onclick="togglePrefCat('Vergi Hukuku',this)">Vergi Hukuku</button>
+          <button class="filter-chip" onclick="togglePrefCat('İdare Hukuku',this)">İdare Hukuku</button>
+          <button class="filter-chip" onclick="togglePrefCat('Ceza Hukuku',this)">Ceza Hukuku</button>
+          <button class="filter-chip" onclick="togglePrefCat('İcra Hukuku',this)">İcra Hukuku</button>
+          <button class="filter-chip" onclick="togglePrefCat('Medeni Hukuk',this)">Medeni Hukuk</button>
+          <button class="filter-chip" onclick="togglePrefCat('Ticaret Hukuku',this)">Ticaret Hukuku</button>
+          <button class="filter-chip" onclick="togglePrefCat('Anayasa',this)">Anayasa</button>
+        </div>
+        <div class="card-title" style="margin-top:24px">E-POSTA BİLDİRİMİ</div>
+        <label style="display:flex;align-items:center;gap:10px;cursor:pointer;font-size:.9rem">
+          <input type="checkbox" id="pref-email" style="width:18px;height:18px;cursor:pointer">
+          Günlük özet e-postası al
+        </label>
+        <div style="margin-top:12px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:.85rem;color:var(--muted)">Gönderim saati:</span>
+          <select id="pref-hour" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-family:'DM Sans',sans-serif;background:var(--white)">
+            <option value="7">07:00</option>
+            <option value="8" selected>08:00</option>
+            <option value="9">09:00</option>
+            <option value="10">10:00</option>
+          </select>
+        </div>
+        <button class="generate-btn" style="margin-top:20px" onclick="savePreferences()">
+          Tercihleri Kaydet
+        </button>
+      </div>
+    </div>
+
+    <!-- Davalar -->
+    <div class="page" id="page-cases">
+      <div class="page-header">
+        <h1>Davalar</h1>
+        <p>Aktif davaları yönetin ve takip edin</p>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+        <button class="generate-btn" style="padding:10px 20px;font-size:.9rem" onclick="showNewCaseForm()">+ Yeni Dava</button>
+      </div>
+      <div id="new-case-form" style="display:none" class="card">
+        <div class="card-title">YENİ DAVA</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div class="field"><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">DAVA BAŞLIĞI *</label><input type="text" id="case-title" class="search-input" placeholder="Yılmaz - ABC Şirketi İş Davası"></div>
+          <div class="field"><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">ESAS NO</label><input type="text" id="case-number" class="search-input" placeholder="2024/1234"></div>
+          <div class="field"><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">MAHKEME</label><input type="text" id="case-court" class="search-input" placeholder="İstanbul 1. İş Mahkemesi"></div>
+          <div class="field"><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">TÜR</label>
+            <select id="case-type" class="search-input">
+              <option value="mahkeme">Mahkeme</option><option value="icra">İcra</option>
+              <option value="idari">İdari</option><option value="ceza">Ceza</option>
+            </select>
+          </div>
+          <div class="field"><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">DAVACI</label><input type="text" id="case-plaintiff" class="search-input" placeholder="Müvekkil adı"></div>
+          <div class="field"><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase">DAVALI</label><input type="text" id="case-defendant" class="search-input" placeholder="Karşı taraf"></div>
+        </div>
+        <textarea class="input-area" id="case-subject" style="min-height:70px;margin-top:12px" placeholder="Dava konusu kısa özeti..."></textarea>
+        <div style="display:flex;gap:8px;margin-top:12px;justify-content:flex-end">
+          <button class="btn-sm btn-outline" onclick="document.getElementById('new-case-form').style.display='none'">İptal</button>
+          <button class="btn-sm btn-primary-sm" onclick="saveCase()">Kaydet</button>
+        </div>
+      </div>
+      <div id="cases-list"><div style="color:var(--muted);text-align:center;padding:40px">Yükleniyor...</div></div>
+    </div>
+
+    <!-- Süre Takibi -->
+    <div class="page" id="page-deadlines">
+      <div class="page-header">
+        <h1>Süre Takibi</h1>
+        <p>Duruşma, temyiz ve itiraz sürelerini kaçırmayın</p>
+      </div>
+      <div id="overdue-section" style="display:none" class="card" style="border-left:3px solid var(--danger)">
+        <div class="card-title" style="color:var(--danger)">⚠ GEÇMİŞ SÜRELER</div>
+        <div id="overdue-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">YAKLAŞAN SÜRELER (30 GÜN)</div>
+        <div id="upcoming-list"><div style="color:var(--muted);text-align:center;padding:20px">Yükleniyor...</div></div>
+      </div>
+      <div class="card">
+        <div class="card-title">YENİ SÜRE EKLE</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px">TÜR</label>
+            <select id="dl-type" class="search-input">
+              <option value="hearing">Duruşma Tarihi</option>
+              <option value="appeal">Temyiz Süresi</option>
+              <option value="objection">İtiraz Süresi</option>
+              <option value="statute">Dava Açma Zamanaşımı</option>
+            </select>
+          </div>
+          <div><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px">TARİH</label>
+            <input type="date" id="dl-date" class="search-input">
+          </div>
+          <div><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px">BAŞLIK</label>
+            <input type="text" id="dl-title" class="search-input" placeholder="Duruşma — ABC Davası">
+          </div>
+          <div><label style="font-size:.72rem;color:var(--muted);letter-spacing:1px;text-transform:uppercase;display:block;margin-bottom:6px">DAVA ID (opsiyonel)</label>
+            <input type="number" id="dl-case-id" class="search-input" placeholder="1">
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+          <button class="btn-sm btn-primary-sm" onclick="addDeadline()">Süre Ekle</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Strateji Asistanı -->
+    <div class="page" id="page-strategy">
+      <div class="page-header">
+        <h1>Strateji Asistanı</h1>
+        <p>Davanızı anlatın, Claude kazanma şansınızı ve stratejiyi analiz etsin</p>
+      </div>
+      <div class="card">
+        <div class="card-title">DAVA ÖZET VE DETAYLARI</div>
+        <textarea class="input-area" id="strategy-input" style="min-height:160px"
+          placeholder="Davanın tüm detaylarını yazın:&#10;• Taraflar ve ilişki&#10;• Olaylar ve tarihler&#10;• Mevcut deliller&#10;• Karşı tarafın argümanları&#10;• Avantaj ve dezavantajlarınız&#10;&#10;Ne kadar detaylı olursanız analiz o kadar isabetli olur."></textarea>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px">
+          <select id="strategy-category" class="search-input" style="width:200px">
+            <option value="">Kategori seçin (opsiyonel)</option>
+            <option value="İş Hukuku">İş Hukuku</option>
+            <option value="Medeni Hukuk">Medeni Hukuk</option>
+            <option value="Ceza Hukuku">Ceza Hukuku</option>
+            <option value="İdare Hukuku">İdare Hukuku</option>
+            <option value="İcra Hukuku">İcra Hukuku</option>
+            <option value="Ticaret Hukuku">Ticaret Hukuku</option>
+          </select>
+          <button class="generate-btn" id="strategy-btn" onclick="analyzeStrategy()">
+            <span id="strategy-btn-text">Strateji Analizi Yap</span>
+            <span id="strategy-spinner" class="spinner" style="display:none"></span>
+          </button>
+        </div>
+      </div>
+      <div class="output-box" id="strategy-output">
+        <div class="output-header">
+          <h3>Strateji Analizi</h3>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span id="win-prob-badge" style="font-size:.8rem;padding:4px 12px;border-radius:20px;font-weight:700"></span>
+            <div class="output-actions">
+              <button class="btn-sm btn-outline" onclick="copyStrategy()">Kopyala</button>
+              <button class="btn-sm btn-primary-sm" onclick="printStrategy()">PDF İndir</button>
+            </div>
+          </div>
+        </div>
+        <div id="strategy-used-precedents" style="margin-bottom:14px"></div>
+        <div id="strategy-text" style="font-family:Georgia,serif;font-size:.9rem;line-height:1.9;white-space:pre-wrap"></div>
+        <div style="margin-top:10px" id="strategy-cost"></div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- PDF Önizleme Modal -->
+<div class="modal-overlay" id="pdf-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">Dilekçe Önizleme</h3>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div id="modal-petition-text" class="petition-preview"></div>
+      <div id="revise-section" style="margin-top:20px;display:none">
+        <div class="card-title">Revizyon Notu</div>
+        <textarea class="revise-input" id="revise-input" placeholder="Ne değiştirilsin? örn: Davacı adını Ahmet Yılmaz yap, talep miktarını 50.000 TL olarak güncelle..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-sm btn-outline" id="revise-toggle-btn" onclick="toggleRevise()">Revize Et</button>
+      <button class="btn-sm btn-outline" onclick="copyModal()">Kopyala</button>
+      <button class="btn-sm btn-primary-sm" onclick="printModal()">PDF İndir</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── Konfigürasyon ──────────────────────────────────────────────────────────
+const API = window.API_BASE || 'http://127.0.0.1:8000';
+let token = localStorage.getItem('token');
+let currentUser = JSON.parse(localStorage.getItem('user') || 'null');
+let selectedType = 'mahkeme';
+let currentPetitionId = null;
+let modalPetitionId = null;
+let currentCategory = '';
+
+// ── Başlangıç ──────────────────────────────────────────────────────────────
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').classList.add('hide');
+    if (token && currentUser) {
+      showApp();
+    } else {
+      document.getElementById('login-screen').classList.add('active');
+    }
+  }, 1200);
+});
+
+// ── Auth ───────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach((b,i) => b.classList.toggle('active', (tab==='login'&&i===0)||(tab==='register'&&i===1)));
+  document.getElementById('login-form').style.display    = tab==='login'    ? 'block' : 'none';
+  document.getElementById('register-form').style.display = tab==='register' ? 'block' : 'none';
+  hideError();
+}
+
+function showError(msg) {
+  const el = document.getElementById('form-error');
+  el.textContent = msg; el.classList.add('show');
+}
+function hideError() { document.getElementById('form-error').classList.remove('show'); }
+
+async function handleLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if (!email || !pass) { showError('E-posta ve şifre zorunludur.'); return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; btn.textContent = 'Giriş yapılıyor...';
+  try {
+    const res  = await fetch(`${API}/auth/login`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email, password:pass}) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Giriş başarısız');
+    saveSession(data); showApp();
+  } catch(e) { showError(e.message); }
+  finally { btn.disabled=false; btn.textContent='Giriş Yap'; }
+}
+
+async function handleRegister() {
+  const name  = document.getElementById('reg-name').value.trim();
+  const email = document.getElementById('reg-email').value.trim();
+  const pass  = document.getElementById('reg-pass').value;
+  const bar   = document.getElementById('reg-bar').value.trim();
+  const baro  = document.getElementById('reg-baro').value.trim();
+  if (!name||!email||!pass||!bar||!baro) { showError('Tüm alanlar zorunludur.'); return; }
+  const btn = document.getElementById('reg-btn');
+  btn.disabled=true; btn.textContent='Kaydediliyor...';
+  try {
+    const res  = await fetch(`${API}/auth/register`, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({full_name:name,email,password:pass,bar_number:bar,baro}) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Kayıt başarısız');
+    saveSession(data); showApp();
+  } catch(e) { showError(e.message); }
+  finally { btn.disabled=false; btn.textContent='Kayıt Ol'; }
+}
+
+function saveSession(data) {
+  token = data.access_token;
+  currentUser = { id: data.lawyer_id, name: data.full_name };
+  localStorage.setItem('token', token);
+  localStorage.setItem('user', JSON.stringify(currentUser));
+}
+
+function handleLogout() {
+  localStorage.removeItem('token'); localStorage.removeItem('user');
+  token=null; currentUser=null;
+  document.getElementById('app').classList.remove('active');
+  document.getElementById('login-screen').classList.add('active');
+}
+
+function showApp() {
+  document.getElementById('login-screen').classList.remove('active');
+  document.getElementById('app').classList.add('active');
+  // Kullanıcı bilgisi
+  const name = currentUser?.name || 'Avukat';
+  document.getElementById('user-name').textContent = name;
+  document.getElementById('user-avatar').textContent = name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  // Selamlama
+  const h = new Date().getHours();
+  const greeting = h<12 ? 'Günaydın' : h<18 ? 'İyi günler' : 'İyi akşamlar';
+  document.getElementById('greeting-text').textContent = `${greeting}, Av. ${name.split(' ')[0]}`;
+  // Veriyi yükle
+  loadDashboard();
+  loadPetitionTypes();
+  // Talep alanı karakter sayacı
+  document.getElementById('talep-input').addEventListener('input', function() {
+    document.getElementById('char-count').textContent = this.value.length + ' karakter';
+  });
+}
+
+// ── Dashboard ──────────────────────────────────────────────────────────────
+async function loadDashboard() {
+  try {
+    // İstatistikler
+    const r = await authFetch('/petition/history?limit=100');
+    const petitions = await r.json();
+    document.getElementById('stat-total').textContent = petitions.length;
+    const thisMonth = petitions.filter(p => new Date(p.created_at).getMonth() === new Date().getMonth()).length;
+    document.getElementById('stat-today').textContent = thisMonth;
+    // Son dilekçeler
+    renderRecentPetitions(petitions.slice(0,5));
+    // Kararname sayısı
+    const dr = await fetch(`${API}/decrees/categories`);
+    const cats = await dr.json();
+    const total = cats.reduce((s,c)=>s+c.count,0);
+    document.getElementById('stat-decrees').textContent = total;
+    document.getElementById('stat-chunks').textContent = '—';
+  } catch(e) { console.warn('Dashboard yükleme:', e); }
+  // Bugünkü gazete yayınları
+  renderGazetteFeed();
+}
+
+function renderGazetteFeed() {
+  const feed = document.getElementById('gazette-feed');
+  // Demo veri — gerçekte /decrees/recent endpoint'inden gelecek
+  const items = [
+    { cat:'Anayasa', title:'Cumhurbaşkanlığı Kararnamesi yayımlandı', date:'Bugün 08:15', isNew:true },
+    { cat:'İdare Hukuku', title:'Yönetmelik değişikliği Resmi Gazete\'de', date:'Bugün 08:15', isNew:true },
+    { cat:'Vergi Hukuku', title:'KDV oranlarına ilişkin tebliğ', date:'Bugün 08:15', isNew:false },
+    { cat:'İş Hukuku', title:'Asgari ücret genelgesi güncellendi', date:'Dün', isNew:false },
+  ];
+  feed.innerHTML = items.map(i => `
+    <div class="gazette-item" onclick="showPage('decree-search')">
+      <div class="gazette-dot${i.isNew?' new':''}"></div>
+      <div>
+        <div class="gazette-cat">${i.cat}</div>
+        <div class="gazette-title">${i.title}</div>
+        <div class="gazette-meta">${i.date}</div>
+      </div>
+    </div>
+  `).join('');
+  // Bildirim badge
+  const newCount = items.filter(i=>i.isNew).length;
+  if (newCount > 0) {
+    const badge = document.getElementById('notif-badge');
+    badge.style.display='inline'; badge.textContent=newCount;
+  }
+}
+
+function renderRecentPetitions(petitions) {
+  const el = document.getElementById('recent-petitions');
+  if (!petitions.length) { el.innerHTML='<div style="color:var(--muted);font-size:.88rem;padding:10px 0">Henüz dilekçe yok</div>'; return; }
+  const typeLabels = { mahkeme:'Mahkeme',ihtarname:'İhtarname',idari:'İdari',icra:'İcra' };
+  el.innerHTML = `<table class="history-table" style="margin:-8px 0">
+    <thead><tr><th>Konu</th><th>Tür</th><th>Tarih</th><th>İşlem</th></tr></thead>
+    <tbody>
+    ${petitions.map(p=>`
+      <tr>
+        <td>${p.subject.slice(0,60)}${p.subject.length>60?'...':''}</td>
+        <td><span class="cat-badge">${typeLabels[p.petition_type]||p.petition_type}</span></td>
+        <td>${new Date(p.created_at).toLocaleDateString('tr-TR')}</td>
+        <td><button class="action-link" onclick="openPetition(${p.id})">Görüntüle</button></td>
+      </tr>
+    `).join('')}
+    </tbody>
+  </table>`;
+}
+
+// ── Dilekçe türleri — API'den yükle ──────────────────────────────────────
+let allPetitionTypes = {};
+let selectedAnalysisType = 'karsi_dilekce';
+let selectedFile = null;
+
+async function loadPetitionTypes() {
+  try {
+    const res  = await fetch(`${API}/petition/types`);
+    const data = await res.json();
+    allPetitionTypes = data;
+    renderTypeGrids(data);
+  } catch {
+    // Fallback — statik liste
+    renderTypeGrids({
+      mahkeme:   {label:'Mahkemeye Dilekçe', icon:'⚖️',  category:'temel'},
+      ihtarname: {label:'İhtarname',          icon:'📋', category:'temel'},
+      idari:     {label:'İdari Başvuru',      icon:'🏛️', category:'temel'},
+      icra:      {label:'İcra Takibi',        icon:'📑', category:'temel'},
+      bosanma:   {label:'Boşanma ve Aile',    icon:'👨‍👩‍👧', category:'ozel'},
+      tazminat:  {label:'Tazminat Davası',    icon:'⚡',  category:'ozel'},
+      kira:      {label:'Kira / Tahliye',     icon:'🏠', category:'ozel'},
+      ceza:      {label:'Ceza Savunma',       icon:'🛡️', category:'ozel'},
+      miras:     {label:'Miras İtirazı',      icon:'📜', category:'ozel'},
+      sigorta:   {label:'Sigorta Tazminatı',  icon:'🔒', category:'ozel'},
+      tuketici:  {label:'Tüketici Şikayeti',  icon:'🛒', category:'ozel'},
+      iskaza:    {label:'İş Kazası',          icon:'⛑️', category:'ozel'},
+    });
+  }
+}
+
+function renderTypeGrids(types) {
+  const basic   = document.getElementById('type-grid-basic');
+  const special = document.getElementById('type-grid-special');
+  if (!basic || !special) return;
+  basic.innerHTML = '';
+  special.innerHTML = '';
+  let firstKey = null;
+  Object.entries(types).forEach(([key, t], i) => {
+    if (i === 0) firstKey = key;
+    const label = t.label || key;
+    const icon  = t.icon  || '📄';
+    const cat   = t.category || 'temel';
+    const card  = document.createElement('div');
+    card.className = 'type-card' + (i === 0 ? ' selected' : '');
+    card.innerHTML = `<div class="type-emoji">${icon}</div>
+      <div class="type-name" style="font-size:.85rem">${label}</div>`;
+    card.onclick = () => {
+      document.querySelectorAll('#type-grid-basic .type-card, #type-grid-special .type-card')
+        .forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      selectedType = key;
+    };
+    (cat === 'temel' ? basic : special).appendChild(card);
+  });
+  if (firstKey) selectedType = firstKey;
+}
+
+function switchPetitionTab(tab) {
+  document.getElementById('panel-write').style.display   = tab==='write'   ? 'block' : 'none';
+  document.getElementById('panel-analyze').style.display = tab==='analyze' ? 'block' : 'none';
+  document.getElementById('tab-write').classList.toggle('active',   tab==='write');
+  document.getElementById('tab-analyze').classList.toggle('active', tab==='analyze');
+}
+
+function selectAnalysisType(type, el) {
+  selectedAnalysisType = type;
+  document.querySelectorAll('#panel-analyze .type-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function handleFileSelect(input) {
+  if (input.files[0]) setFile(input.files[0]);
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('drop-zone').style.borderColor = 'var(--border)';
+  if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+}
+
+function setFile(file) {
+  selectedFile = file;
+  document.getElementById('file-name').textContent = `✓ ${file.name} (${(file.size/1024).toFixed(0)} KB)`;
+  document.getElementById('drop-zone').style.borderColor = 'var(--gold)';
+}
+
+async function analyzeDocument() {
+  if (!selectedFile) { showToast('Lütfen önce dosya seçin'); return; }
+  const btn     = document.getElementById('analyze-btn');
+  const btnText = document.getElementById('analyze-btn-text');
+  const spinner = document.getElementById('analyze-spinner');
+  btn.disabled=true; btnText.textContent='Analiz ediliyor'; spinner.style.display='inline-block';
+
+  const outBox  = document.getElementById('analyze-output-box');
+  const textEl  = document.getElementById('analyze-output-text');
+  const costEl  = document.getElementById('analyze-cost-area');
+  outBox.classList.add('show');
+  textEl.textContent = 'Belge okunuyor ve analiz ediliyor...';
+
+  try {
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+    formData.append('analysis_type', selectedAnalysisType);
+    formData.append('talep', document.getElementById('analyze-talep').value);
+
+    const token = localStorage.getItem('token');
+    const res   = await fetch(`${API}/document/analyze`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${token}` },
+      body: formData,
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Analiz başarısız');
+
+    document.getElementById('analyze-output-title').textContent = data.label;
+    textEl.textContent = data.analysis_text;
+    costEl.innerHTML = `<span style="font-size:.75rem;color:var(--muted)">
+      Maliyet: $${data.cost_usd?.toFixed(4)} · ${data.char_count} karakter işlendi
+    </span>`;
+    showToast('Analiz tamamlandı!');
+  } catch(e) {
+    textEl.textContent = 'Hata: ' + e.message;
+    showToast('Analiz hatası');
+  } finally {
+    btn.disabled=false; btnText.textContent='Belgeyi Analiz Et'; spinner.style.display='none';
+  }
+}
+
+function copyAnalysis() {
+  navigator.clipboard.writeText(document.getElementById('analyze-output-text').innerText)
+    .then(()=>showToast('Kopyalandı!'));
+}
+
+function printAnalysis() {
+  printText(
+    document.getElementById('analyze-output-text').innerText,
+    document.getElementById('analyze-output-title').textContent
+  );
+}
+
+// ── Dilekçe oluşturma ──────────────────────────────────────────────────────
+function selectType(type, el) {
+  selectedType = type;
+  document.querySelectorAll('.type-card').forEach(c=>c.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function generatePetition() {
+  const talep = document.getElementById('talep-input').value.trim();
+  if (talep.length < 20) { showToast('Lütfen en az 20 karakter yazın'); return; }
+  const btn     = document.getElementById('gen-btn');
+  const btnText = document.getElementById('gen-btn-text');
+  const spinner = document.getElementById('gen-spinner');
+  btn.disabled=true; btnText.textContent='Oluşturuluyor'; spinner.style.display='inline-block';
+  // Output kutusunu hazırla
+  const outBox = document.getElementById('output-box');
+  const textEl = document.getElementById('petition-text');
+  const tagsEl = document.getElementById('decree-tags');
+  const warnEl = document.getElementById('warning-area');
+  const costEl = document.getElementById('cost-area');
+  outBox.classList.add('show');
+  textEl.innerHTML = '<span class="cursor"></span>';
+  tagsEl.innerHTML = ''; warnEl.innerHTML = ''; costEl.innerHTML = '';
+  let fullText = '';
+  try {
+    const response = await fetch(`${API}/petition/stream`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ petition_type: selectedType, talep, use_haiku: false }),
+    });
+    if (!response.ok) throw new Error('Sunucu hatası');
+    const reader  = response.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream:true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        try {
+          const ev = JSON.parse(line.slice(6));
+          if (ev.type === 'chunk') {
+            fullText += ev.data;
+            textEl.innerHTML = fullText.replace(/\n/g,'<br>') + '<span class="cursor"></span>';
+            textEl.scrollIntoView({ behavior:'smooth', block:'end' });
+          } else if (ev.type === 'meta') {
+            tagsEl.innerHTML = ev.data.used_decrees.map(d =>
+              `<span class="decree-tag" title="${d.gazette_date}">📜 ${d.title.slice(0,50)} — ${d.madde_no||'genel'}</span>`
+            ).join('');
+          } else if (ev.type === 'warning') {
+            warnEl.innerHTML = `<div class="warning-box">⚠ ${ev.data}</div>`;
+          } else if (ev.type === 'done') {
+            currentPetitionId = ev.data.petition_id;
+            textEl.innerHTML = fullText.replace(/\n/g,'<br>');
+            costEl.innerHTML = `<span style="font-size:.75rem;color:var(--muted)">Model: ${ev.data.model} · Maliyet: $${ev.data.cost_usd.toFixed(4)} · ${ev.data.output_tokens} token</span>`;
+            showToast('Dilekçe oluşturuldu!');
+          } else if (ev.type === 'error') {
+            throw new Error(ev.data);
+          }
+        } catch {}
+      }
+    }
+  } catch(e) {
+    textEl.innerHTML = `<span style="color:var(--danger)">Hata: ${e.message}</span>`;
+    showToast('Bağlantı hatası — sunucu çalışıyor mu?');
+  } finally {
+    btn.disabled=false; btnText.textContent='Dilekçeyi Oluştur'; spinner.style.display='none';
+  }
+}
+
+function copyPetition() {
+  const text = document.getElementById('petition-text').innerText;
+  navigator.clipboard.writeText(text).then(()=>showToast('Kopyalandı!'));
+}
+
+function printPetition() {
+  const text = document.getElementById('petition-text').innerText;
+  printText(text, 'Dilekçe');
+}
+
+function openRevise() {
+  if (!currentPetitionId) { showToast('Önce dilekçe oluşturun'); return; }
+  openPetition(currentPetitionId);
+  setTimeout(() => { toggleRevise(); }, 400);
+}
+
+// ── Kararname arama ────────────────────────────────────────────────────────
+async function searchDecrees() {
+  const q = document.getElementById('search-input').value.trim();
+  if (!q) { showToast('Arama terimi girin'); return; }
+  const list = document.getElementById('decree-list');
+  list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Aranıyor...</div>';
+  try {
+    // Embedding search — embedder.py'nin semantic_search fonksiyonunu çağıran endpoint
+    const res  = await authFetch(`/decrees/search?q=${encodeURIComponent(q)}&category=${encodeURIComponent(currentCategory)}&top_k=10`);
+    if (!res.ok) throw new Error('Arama başarısız');
+    const data = await res.json();
+    if (!data.length) {
+      list.innerHTML = '<div style="color:var(--muted);text-align:center;padding:30px">Sonuç bulunamadı.<br><small>Daha az kelime ile deneyin</small></div>';
+      return;
+    }
+    list.innerHTML = data.map(r => `
+      <div class="decree-card">
+        <div class="decree-card-header">
+          <div class="decree-card-title">${r.decree_title}</div>
+          <div class="decree-date">${r.gazette_date}</div>
+        </div>
+        <div class="decree-excerpt">${r.content.slice(0,180)}...</div>
+        <div class="decree-footer">
+          <span class="cat-badge">${r.category||'Genel'}</span>
+          ${r.madde_no ? `<span class="cat-badge" style="background:rgba(15,30,60,.06);color:var(--navy)">${r.madde_no}</span>` : ''}
+          <div class="sim-bar-wrap">
+            <div class="sim-bar" style="width:${Math.round(r.similarity*100)}px;max-width:80px"></div>
+            <span class="sim-label">%${Math.round(r.similarity*100)} uyum</span>
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    list.innerHTML = `<div style="color:var(--danger);padding:20px">Hata: ${e.message}</div>`;
+  }
+}
+
+function filterCategory(cat, el) {
+  currentCategory = cat;
+  document.querySelectorAll('.filter-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  const q = document.getElementById('search-input').value.trim();
+  if (q) searchDecrees();
+}
+
+// ── Geçmiş ─────────────────────────────────────────────────────────────────
+async function loadHistory() {
+  const tbody = document.getElementById('history-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Yükleniyor...</td></tr>';
+  try {
+    const res  = await authFetch('/petition/history?limit=50');
+    const data = await res.json();
+    if (!data.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:24px">Henüz dilekçe yok</td></tr>';
+      return;
+    }
+    const typeLabels = { mahkeme:'⚖️ Mahkeme', ihtarname:'📋 İhtarname', idari:'🏛️ İdari', icra:'📑 İcra' };
+    tbody.innerHTML = data.map(p => `
+      <tr>
+        <td>${p.subject.slice(0,60)}${p.subject.length>60?'...':''}</td>
+        <td><span class="cat-badge">${typeLabels[p.petition_type]||p.petition_type}</span></td>
+        <td>${new Date(p.created_at).toLocaleDateString('tr-TR')}</td>
+        <td><span class="status-pill ${p.status==='draft'?'status-draft':'status-done'}">${p.status==='draft'?'Taslak':'Tamamlandı'}</span></td>
+        <td><button class="action-link" onclick="openPetition(${p.id})">Görüntüle / PDF</button></td>
+      </tr>
+    `).join('');
+  } catch(e) {
+    tbody.innerHTML = `<tr><td colspan="5" style="color:var(--danger);padding:20px">Hata: ${e.message}</td></tr>`;
+  }
+}
+
+// ── Modal ──────────────────────────────────────────────────────────────────
+async function openPetition(id) {
+  modalPetitionId = id;
+  document.getElementById('modal-petition-text').textContent = 'Yükleniyor...';
+  document.getElementById('pdf-modal').classList.add('show');
+  document.getElementById('revise-section').style.display = 'none';
+  document.getElementById('revise-toggle-btn').textContent = 'Revize Et';
+  try {
+    const res  = await authFetch(`/petition/${id}`);
+    const data = await res.json();
+    document.getElementById('modal-title').textContent = data.subject.slice(0,50);
+    document.getElementById('modal-petition-text').textContent = data.generated_text;
+  } catch(e) {
+    document.getElementById('modal-petition-text').textContent = 'Yüklenemedi: ' + e.message;
+  }
+}
+
+function closeModal() {
+  document.getElementById('pdf-modal').classList.remove('show');
+  modalPetitionId = null;
+}
+
+function toggleRevise() {
+  const sec = document.getElementById('revise-section');
+  const btn = document.getElementById('revise-toggle-btn');
+  const showing = sec.style.display !== 'none';
+  sec.style.display = showing ? 'none' : 'block';
+  btn.textContent = showing ? 'Revize Et' : 'Revizyon İptal';
+  if (!showing) document.getElementById('revise-input').focus();
+}
+
+async function submitRevise() {
+  const note = document.getElementById('revise-input').value.trim();
+  if (!note || !modalPetitionId) return;
+  try {
+    const res  = await authFetch('/petition/revise', { method:'POST', body: JSON.stringify({ petition_id: modalPetitionId, revision_note: note }) });
+    const data = await res.json();
+    document.getElementById('modal-petition-text').textContent = data.revised_text;
+    document.getElementById('revise-section').style.display = 'none';
+    document.getElementById('revise-toggle-btn').textContent = 'Revize Et';
+    document.getElementById('revise-input').value = '';
+    showToast('Dilekçe revize edildi!');
+  } catch(e) { showToast('Revizyon hatası: ' + e.message); }
+}
+
+function copyModal() {
+  navigator.clipboard.writeText(document.getElementById('modal-petition-text').innerText).then(()=>showToast('Kopyalandı!'));
+}
+
+function printModal() {
+  printText(document.getElementById('modal-petition-text').innerText, document.getElementById('modal-title').textContent);
+}
+
+// ── PDF yazdır ─────────────────────────────────────────────────────────────
+function printText(text, title) {
+  const w = window.open('','_blank');
+  w.document.write(`<!DOCTYPE html><html lang="tr"><head><meta charset="UTF-8">
+  <title>${title}</title>
+  <style>
+    @page{margin:2.5cm 2cm}
+    body{font-family:'Times New Roman',serif;font-size:12pt;line-height:1.9;color:#1a1a1a}
+    .meta{font-size:9pt;color:#777;border-bottom:1px solid #ddd;padding-bottom:8pt;margin-bottom:16pt}
+    p{margin:0 0 8pt;text-align:justify}
+  </style></head><body>
+  <div class="meta">Hukuk AI — ${title} — ${new Date().toLocaleDateString('tr-TR')}</div>
+  ${text.split('\n').map(l=>`<p>${l||'&nbsp;'}</p>`).join('')}
+  </body></html>`);
+  w.document.close();
+  setTimeout(()=>{ w.print(); }, 500);
+}
+
+// ── Yardımcılar ────────────────────────────────────────────────────────────
+async function authFetch(path, opts={}) {
+  return fetch(`${API}${path}`, {
+    ...opts,
+    headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}`, ...(opts.headers||{}) },
+    body: opts.body,
+  });
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 3000);
+}
+
+// ── Davalar ────────────────────────────────────────────────────────────────
+function showNewCaseForm() {
+  const f = document.getElementById('new-case-form');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+async function loadCases() {
+  const el = document.getElementById('cases-list');
+  try {
+    const res  = await authFetch('/cases');
+    const data = await res.json();
+    if (!data.length) {
+      el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px">Henüz dava yok.<br>Yukarıdan yeni dava oluşturun.</div>';
+      return;
+    }
+    const typeLabels = {mahkeme:'⚖️ Mahkeme',icra:'📑 İcra',idari:'🏛️ İdari',ceza:'🛡️ Ceza'};
+    el.innerHTML = data.map(c => `
+      <div class="gazette-item" style="margin-bottom:8px;cursor:default">
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+            <strong style="font-size:.95rem">${c.title}</strong>
+            <span class="cat-badge">${typeLabels[c.case_type]||c.case_type}</span>
+          </div>
+          ${c.case_number ? `<div style="font-size:.78rem;color:var(--muted)">Esas: ${c.case_number}</div>` : ''}
+          ${c.court ? `<div style="font-size:.78rem;color:var(--muted)">${c.court}</div>` : ''}
+          <div style="display:flex;gap:12px;margin-top:6px">
+            ${c.pending_deadlines > 0 ? `<span style="font-size:.75rem;color:var(--danger);font-weight:600">⏰ ${c.pending_deadlines} süre</span>` : ''}
+            ${c.next_deadline ? `<span style="font-size:.75rem;color:var(--muted)">Sonraki: ${new Date(c.next_deadline).toLocaleDateString('tr-TR')}</span>` : ''}
+          </div>
+        </div>
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--danger);padding:20px">Hata: ${e.message}</div>`;
+  }
+}
+
+async function saveCase() {
+  const body = {
+    title:      document.getElementById('case-title').value.trim(),
+    case_number:document.getElementById('case-number').value.trim(),
+    court:      document.getElementById('case-court').value.trim(),
+    case_type:  document.getElementById('case-type').value,
+    plaintiff:  document.getElementById('case-plaintiff').value.trim(),
+    defendant:  document.getElementById('case-defendant').value.trim(),
+    subject:    document.getElementById('case-subject').value.trim(),
+  };
+  if (!body.title) { showToast('Dava başlığı zorunludur'); return; }
+  try {
+    await authFetch('/cases', { method:'POST', body: JSON.stringify(body) });
+    document.getElementById('new-case-form').style.display = 'none';
+    showToast('Dava oluşturuldu!');
+    loadCases();
+  } catch(e) { showToast('Hata: ' + e.message); }
+}
+
+// ── Süre Takibi ────────────────────────────────────────────────────────────
+async function loadDeadlines() {
+  try {
+    const res  = await authFetch('/cases/deadlines?days=30');
+    const data = await res.json();
+    const upcoming = data.upcoming || [];
+    const overdue  = data.overdue  || [];
+
+    // Geçmiş süreler
+    const overdueSection = document.getElementById('overdue-section');
+    if (overdue.length > 0) {
+      overdueSection.style.display = 'block';
+      document.getElementById('overdue-list').innerHTML = overdue.map(d => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(192,57,43,.1)">
+          <div>
+            <strong style="font-size:.88rem;color:var(--danger)">${d.title}</strong>
+            <div style="font-size:.75rem;color:var(--muted)">${d.case_title || ''} — ${d.days_overdue} gün geçti</div>
+          </div>
+          <button class="btn-sm" style="border-color:var(--danger);color:var(--danger);padding:4px 10px;font-size:.75rem" onclick="doneDeadline(${d.id})">Tamamlandı</button>
+        </div>
+      `).join('');
+      document.getElementById('deadline-badge').style.display = 'inline';
+    }
+
+    // Yaklaşan süreler
+    const upcomingEl = document.getElementById('upcoming-list');
+    if (!upcoming.length) {
+      upcomingEl.innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">Önümüzdeki 30 günde süre yok</div>';
+      return;
+    }
+    const typeColors = {hearing:'#2D4A8A',appeal:'#7B3FA0',objection:'#C0392B',statute:'#B87333',payment:'#1D7A4F'};
+    upcomingEl.innerHTML = upcoming.map(d => {
+      const color   = typeColors[d.deadline_type] || '#888';
+      const urgent  = d.days_remaining <= 3;
+      return `
+        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)">
+          <div style="width:4px;height:40px;border-radius:2px;background:${color};flex-shrink:0"></div>
+          <div style="flex:1">
+            <strong style="font-size:.88rem">${d.title}</strong>
+            <div style="font-size:.75rem;color:var(--muted)">${d.case_title || ''}</div>
+          </div>
+          <div style="text-align:right">
+            <div style="font-size:.82rem;font-weight:600;color:${urgent?'var(--danger)':'var(--navy)'}">
+              ${d.days_remaining === 0 ? 'BUGÜN' : d.days_remaining + ' gün'}
+            </div>
+            <div style="font-size:.72rem;color:var(--muted)">${new Date(d.due_date).toLocaleDateString('tr-TR')}</div>
+          </div>
+          <button class="btn-sm btn-outline" style="padding:4px 10px;font-size:.72rem" onclick="doneDeadline(${d.id})">✓</button>
+        </div>
+      `;
+    }).join('');
+  } catch(e) {
+    document.getElementById('upcoming-list').innerHTML = `<div style="color:var(--danger);padding:20px">Hata: ${e.message}</div>`;
+  }
+}
+
+async function addDeadline() {
+  const type    = document.getElementById('dl-type').value;
+  const date    = document.getElementById('dl-date').value;
+  const title   = document.getElementById('dl-title').value.trim();
+  const caseId  = document.getElementById('dl-case-id').value;
+  if (!date || !title) { showToast('Tarih ve başlık zorunludur'); return; }
+  const typeLabels = {hearing:'Duruşma Tarihi',appeal:'Temyiz Süresi',objection:'İtiraz Süresi',statute:'Zamanaşımı'};
+  try {
+    const endpoint = caseId ? `/cases/${caseId}/deadlines` : `/cases/1/deadlines`;
+    await authFetch(endpoint, { method:'POST', body: JSON.stringify({
+      deadline_type: type,
+      title: title || typeLabels[type],
+      due_date: date,
+      reminder_days: 3,
+    })});
+    showToast('Süre eklendi!');
+    document.getElementById('dl-date').value = '';
+    document.getElementById('dl-title').value = '';
+    loadDeadlines();
+  } catch(e) { showToast('Hata: ' + e.message); }
+}
+
+async function doneDeadline(id) {
+  await authFetch(`/cases/deadlines/${id}/done`, { method:'POST', body:'{}' });
+  showToast('Tamamlandı!');
+  loadDeadlines();
+}
+
+// ── Strateji Asistanı ──────────────────────────────────────────────────────
+async function analyzeStrategy() {
+  const summary  = document.getElementById('strategy-input').value.trim();
+  const category = document.getElementById('strategy-category').value;
+  if (summary.length < 30) { showToast('Lütfen daha detaylı dava özeti yazın'); return; }
+
+  const btn     = document.getElementById('strategy-btn');
+  const btnText = document.getElementById('strategy-btn-text');
+  const spinner = document.getElementById('strategy-spinner');
+  btn.disabled=true; btnText.textContent='Analiz yapılıyor'; spinner.style.display='inline-block';
+
+  const outBox = document.getElementById('strategy-output');
+  const textEl = document.getElementById('strategy-text');
+  outBox.classList.add('show');
+  textEl.textContent = 'İlgili kararnameler ve içtihatlar taranıyor, strateji hazırlanıyor...';
+
+  try {
+    const res  = await authFetch('/cases/strategy', {
+      method: 'POST',
+      body:   JSON.stringify({ case_summary: summary, category }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.detail || 'Analiz başarısız');
+
+    textEl.textContent = data.analysis;
+
+    // Kazanma olasılığı rozeti
+    const prob   = data.win_probability || 'Orta';
+    const probEl = document.getElementById('win-prob-badge');
+    const colors = {Yüksek:'#1D7A4F',Orta:'#B87333',Düşük:'#C0392B'};
+    probEl.textContent = `Kazanma Şansı: ${prob}`;
+    probEl.style.background = (colors[prob]||'#888') + '20';
+    probEl.style.color = colors[prob] || '#888';
+
+    // Kullanılan içtihatlar
+    const precsEl = document.getElementById('strategy-used-precedents');
+    if (data.used_precedents?.length) {
+      precsEl.innerHTML = '<div class="decree-tags">' +
+        data.used_precedents.map(p =>
+          `<span class="decree-tag">📚 ${p.court} ${p.chamber||''} — ${p.decision_number||''}</span>`
+        ).join('') + '</div>';
+    }
+
+    document.getElementById('strategy-cost').innerHTML =
+      `<span style="font-size:.75rem;color:var(--muted)">Maliyet: $${data.cost_usd?.toFixed(4)}</span>`;
+    showToast('Strateji analizi tamamlandı!');
+  } catch(e) {
+    textEl.textContent = 'Hata: ' + e.message;
+  } finally {
+    btn.disabled=false; btnText.textContent='Strateji Analizi Yap'; spinner.style.display='none';
+  }
+}
+
+function copyStrategy() {
+  navigator.clipboard.writeText(document.getElementById('strategy-text').innerText)
+    .then(()=>showToast('Kopyalandı!'));
+}
+
+function printStrategy() {
+  printText(document.getElementById('strategy-text').innerText, 'Dava Stratejisi Analizi');
+}
+
+// ── Bildirimler ────────────────────────────────────────────────────────────
+let selectedPrefCats = [];
+
+async function loadNotifications() {
+  const el = document.getElementById('notif-list');
+  try {
+    const res  = await authFetch('/notifications');
+    const data = await res.json();
+    const notifications = data.notifications || data || [];
+    const unread_count  = data.unread_count ?? notifications.filter(n=>!n.is_read).length;
+    updateBadge(unread_count);
+    if (!notifications.length) {
+      el.innerHTML = '<div style="color:var(--muted);text-align:center;padding:40px">Henüz bildirim yok</div>';
+      return;
+    }
+    el.innerHTML = notifications.map(n => `
+      <div class="gazette-item ${n.is_read ? '' : 'unread'}" style="${n.is_read ? 'opacity:.7' : 'border-left:3px solid var(--gold)'}"
+           onclick="readNotif(${n.id}, this)">
+        <div class="gazette-dot ${n.is_read ? '' : 'new'}"></div>
+        <div style="flex:1">
+          <div class="gazette-cat">${n.category || 'Genel'}</div>
+          <div class="gazette-title">${n.title}</div>
+          <div class="gazette-meta">${n.body}</div>
+          <div class="gazette-meta" style="margin-top:3px">${new Date(n.created_at).toLocaleString('tr-TR')}</div>
+        </div>
+        ${!n.is_read ? '<span style="font-size:.7rem;color:var(--gold);font-weight:600;white-space:nowrap">YENİ</span>' : ''}
+      </div>
+    `).join('');
+  } catch(e) {
+    el.innerHTML = `<div style="color:var(--danger);padding:20px">Hata: ${e.message}</div>`;
+  }
+}
+
+async function readNotif(id, el) {
+  await authFetch('/notifications/read', { method:'POST', body: JSON.stringify([id]) });
+  el.style.opacity = '.7';
+  el.style.borderLeft = 'none';
+  el.querySelector('.gazette-dot')?.classList.remove('new');
+  // Badge güncelle
+  const res = await authFetch('/notifications');
+  const data = await res.json();
+  updateBadge(data.unread_count);
+}
+
+async function markAllRead() {
+  await authFetch('/notifications/read', { method:'POST', body: JSON.stringify([]) });
+  updateBadge(0);
+  loadNotifications();
+  showToast('Tümü okundu işaretlendi');
+}
+
+function updateBadge(count) {
+  ['notif-badge','notif-badge-side'].forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (count > 0) { el.style.display='inline'; el.textContent=count; }
+    else           { el.style.display='none'; }
+  });
+}
+
+async function pollNotifications() {
+  try {
+    const res  = await authFetch('/notifications?unread_only=true&limit=1');
+    const data = await res.json();
+    updateBadge(data.unread_count);
+  } catch {}
+}
+
+// ── Tercihler ──────────────────────────────────────────────────────────────
+function togglePrefCat(cat, el) {
+  const idx = selectedPrefCats.indexOf(cat);
+  if (idx === -1) { selectedPrefCats.push(cat); el.classList.add('active'); }
+  else { selectedPrefCats.splice(idx, 1); el.classList.remove('active'); }
+}
+
+async function loadPreferences() {
+  try {
+    const res  = await authFetch('/notifications/preferences');
+    const data = await res.json();
+    selectedPrefCats = data.categories || [];
+    document.getElementById('pref-email').checked = data.email_digest !== false;
+    document.getElementById('pref-hour').value    = data.digest_hour || 8;
+    // Chip'leri işaretle
+    document.querySelectorAll('#pref-categories .filter-chip').forEach(chip => {
+      const cat = chip.textContent.trim();
+      chip.classList.toggle('active', selectedPrefCats.includes(cat));
+    });
+  } catch(e) { console.warn('Tercih yüklenemedi:', e); }
+}
+
+async function savePreferences() {
+  try {
+    await authFetch('/notifications/preferences', {
+      method: 'POST',
+      body: JSON.stringify({
+        categories:   selectedPrefCats,
+        email_digest: document.getElementById('pref-email').checked,
+        digest_hour:  parseInt(document.getElementById('pref-hour').value),
+      })
+    });
+    showToast('Tercihler kaydedildi!');
+  } catch(e) { showToast('Kayıt hatası: ' + e.message); }
+}
+
+// showPage — sayfa geçişleri
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  const page = document.getElementById(`page-${id}`);
+  if (page) page.classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  if (id === 'history')       loadHistory();
+  if (id === 'dashboard')     loadDashboard();
+  if (id === 'notifications') loadNotifications();
+  if (id === 'preferences')   loadPreferences();
+  if (id === 'cases')         loadCases();
+  if (id === 'deadlines')     loadDeadlines();
+}
+
+// Sayfa odaklandığında bildirimleri kontrol et (her 60 saniye)
+setInterval(() => { if (token) pollNotifications(); }, 60000);
+
+// Revize gönder butonu modal footer'a ekle
+document.addEventListener('DOMContentLoaded', () => {
+  const footer = document.querySelector('.modal-footer');
+  const btn = document.createElement('button');
+  btn.className='btn-sm btn-primary-sm'; btn.textContent='Revize Gönder';
+  btn.onclick = submitRevise;
+  footer.insertBefore(btn, footer.querySelector('.btn-outline'));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+# Ortam değişkenleri
+.env
+*.env
+
+# PDF dosyaları
+pdfs/
+*.pdf
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+.venv/
+
+# Test dosyaları
+test_search.py
+check_db.py
+add_test_lawyer.py
+
+# Log dosyaları
+*.log
+pipeline.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
