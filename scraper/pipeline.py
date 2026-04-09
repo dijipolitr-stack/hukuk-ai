@@ -17,6 +17,7 @@ import logging
 import time
 from datetime import date, timedelta
 
+import psycopg
 import psycopg as psycopg2
 from psycopg.rows import dict_row as RealDictCursorFactory
 from dotenv import load_dotenv
@@ -35,7 +36,16 @@ log = logging.getLogger(__name__)
 
 
 def get_db():
-    return psycopg2.connect(os.getenv("DATABASE_URL"))
+    """Yeni veritabanı bağlantısı, hata durumunda 3 kez dener."""
+    for attempt in range(3):
+        try:
+            return psycopg.connect(os.getenv("DATABASE_URL"))
+        except Exception as e:
+            if attempt < 2:
+                log.warning(f"DB bağlantı hatası (deneme {attempt+1}/3): {e}")
+                time.sleep(5)
+            else:
+                raise
 
 
 def run_daily_pipeline():
@@ -92,14 +102,17 @@ def run_init_pipeline(years: int = 2):
     current = start
     total_decrees = 0
     while current <= end:
-        conn = psycopg.connect(os.getenv("DATABASE_URL"))
         try:
-            count = scrape_date(current, conn)
-            total_decrees += count
+            conn = get_db()
+            try:
+                count = scrape_date(current, conn)
+                total_decrees += count
+            except Exception as e:
+                log.warning(f"Scrape hatası {current}: {e}")
+            finally:
+                conn.close()
         except Exception as e:
-            log.warning(f"Scrape hatası {current}: {e}")
-        finally:
-            conn.close()
+            log.warning(f"Bağlantı hatası {current}: {e}")
         current += timedelta(days=1)
         time.sleep(1)
 
@@ -108,14 +121,18 @@ def run_init_pipeline(years: int = 2):
     # Parse — her seferinde yeni bağlantı
     log.info("Parse başlıyor...")
     while True:
-        conn = psycopg.connect(os.getenv("DATABASE_URL"))
         try:
-            count = process_unprocessed(conn, limit=50)
+            conn = get_db()
+            try:
+                count = process_unprocessed(conn, limit=50)
+            except Exception as e:
+                log.warning(f"Parse hatası: {e}")
+                count = 0
+            finally:
+                conn.close()
         except Exception as e:
-            log.warning(f"Parse hatası: {e}")
+            log.warning(f"Parse bağlantı hatası: {e}")
             count = 0
-        finally:
-            conn.close()
         if count == 0:
             break
         time.sleep(2)
@@ -123,20 +140,27 @@ def run_init_pipeline(years: int = 2):
     # Embed — her seferinde yeni bağlantı
     log.info("Embedding başlıyor...")
     while True:
-        conn = psycopg.connect(os.getenv("DATABASE_URL"))
         try:
-            count = embed_unprocessed_chunks(conn, limit=200)
+            conn = get_db()
+            try:
+                count = embed_unprocessed_chunks(conn, limit=200)
+            except Exception as e:
+                log.warning(f"Embed hatası: {e}")
+                count = 0
+            finally:
+                conn.close()
         except Exception as e:
-            log.warning(f"Embed hatası: {e}")
+            log.warning(f"Embed bağlantı hatası: {e}")
             count = 0
-        finally:
-            conn.close()
         if count == 0:
             break
         time.sleep(2)
 
     log.info("İlk kurulum tamamlandı!")
-    print_stats()
+    try:
+        print_stats()
+    except Exception as e:
+        log.warning(f"Stats gösterilemedi: {e}")
 
 
 def run_process_only():
