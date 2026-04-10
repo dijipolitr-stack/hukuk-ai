@@ -1,0 +1,7 @@
+﻿docs/
+mobile/
+scraper/pdfs/
+*.pdf
+*.log
+case_tools/check_db.py
+case_tools/test_search.py
