@@ -100,7 +100,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins     = ["*"],   # Production'da domain kısıtla
+    allow_origins     = ["*"],
     allow_credentials = True,
     allow_methods     = ["*"],
     allow_headers     = ["*"],
@@ -482,6 +482,7 @@ def search_precedents_ep(q: str, category: str = "", top_k: int = 8, conn = Depe
     except Exception as e: raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.get("/notifications")
 def get_notifications(
     unread_only: bool = False,
     limit:       int  = 30,
