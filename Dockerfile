@@ -5,7 +5,6 @@ WORKDIR /app
 # Sadece gerekli klasörleri kopyala
 COPY petition_engine/ ./petition_engine/
 COPY scraper/embedder.py ./scraper/embedder.py
-COPY scraper/prompts.py ./scraper/prompts.py
 COPY notifications/ ./notifications/
 COPY case_tools/ ./case_tools/
 
