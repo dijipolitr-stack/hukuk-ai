@@ -80,7 +80,13 @@ class PetitionEngine:
 
     def __init__(self, db_conn):
         self.conn   = db_conn
-        self.client = anthropic.Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+        # httpx proxies uyumsuzluğunu önlemek için custom client
+        import httpx
+        http_client = httpx.Client(timeout=120.0)
+        self.client = anthropic.Anthropic(
+            api_key     = os.getenv("ANTHROPIC_API_KEY"),
+            http_client = http_client,
+        )
 
     # ── Ana üretim metodu (tam sonuç) ────────────────────────────────────────
 
