@@ -172,7 +172,6 @@ def generate_petition(
 async def stream_petition(
     body:   PetitionCreateRequest,
     lawyer: dict = Depends(get_current_lawyer),
-    conn         = Depends(get_db),
 ):
     """
     Dilekçeyi Server-Sent Events ile stream eder.
@@ -191,15 +190,19 @@ async def stream_petition(
         extra_context  = body.extra_context,
     )
 
-    engine = PetitionEngine(conn)
-
     async def event_generator() -> AsyncGenerator[str, None]:
+        # Stream için ayrı bağlantı aç — get_db bağlantısı stream bitmeden kapanıyor
+        import psycopg as _psycopg
+        stream_conn = _psycopg.connect(os.getenv("DATABASE_URL"))
         try:
+            engine = PetitionEngine(stream_conn)
             for event in engine.generate_stream(req):
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
         except Exception as e:
             log.exception("Stream hatası")
             yield f"data: {json.dumps({'type':'error','data':str(e)})}\n\n"
+        finally:
+            stream_conn.close()
 
     return StreamingResponse(
         event_generator(),
