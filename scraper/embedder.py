@@ -129,68 +129,69 @@ def semantic_search(
 ) -> list[dict]:
     """
     Kullanıcı talebine en yakın kararname chunk'larını döner.
+    register_vector bağlantıyı bozmaması için kendi bağlantısını açar.
     """
     import numpy as np
+    from pgvector.psycopg import register_vector
+
+    # Kendi bağlantısını aç — register_vector ana bağlantıyı bozmasın
+    own_conn = psycopg2.connect(os.getenv("DATABASE_URL"))
     try:
-        from pgvector.psycopg import register_vector
-        register_vector(conn)
-    except Exception:
-        pass
-    query_vec = embed_query(query)
+        register_vector(own_conn)
+        query_vec = embed_query(query)
 
-    # Dinamik filtre inşa et
-    filters = []
-    params  = []
+        filters = []
+        params  = []
+        if category_filter:
+            filters.append("d.category = %s")
+            params.append(category_filter)
+        if date_from:
+            filters.append("d.gazette_date >= %s")
+            params.append(date_from)
 
-    if category_filter:
-        filters.append("d.category = %s")
-        params.append(category_filter)
-    if date_from:
-        filters.append("d.gazette_date >= %s")
-        params.append(date_from)
+        where = ("WHERE " + " AND ".join(filters)) if filters else ""
 
-    where = ("WHERE " + " AND ".join(filters)) if filters else ""
+        query_sql = f"""
+            SELECT
+                dc.id            AS chunk_id,
+                dc.decree_id,
+                dc.madde_no,
+                dc.content,
+                dc.chunk_type,
+                d.title          AS decree_title,
+                d.gazette_number,
+                d.gazette_date,
+                d.category,
+                1 - (dc.embedding <=> %s) AS similarity
+            FROM decree_chunks dc
+            JOIN decrees d ON d.id = dc.decree_id
+            {where}
+            ORDER BY dc.embedding <=> %s
+            LIMIT %s
+        """
+        params_full = [query_vec] + params + [query_vec, top_k]
 
-    query_sql = f"""
-        SELECT
-            dc.id            AS chunk_id,
-            dc.decree_id,
-            dc.madde_no,
-            dc.content,
-            dc.chunk_type,
-            d.title          AS decree_title,
-            d.gazette_number,
-            d.gazette_date,
-            d.category,
-            1 - (dc.embedding <=> %s) AS similarity
-        FROM decree_chunks dc
-        JOIN decrees d ON d.id = dc.decree_id
-        {where}
-        ORDER BY dc.embedding <=> %s
-        LIMIT %s
-    """
-    params_full = [query_vec] + params + [query_vec, top_k]
+        with own_conn.cursor(row_factory=RealDictCursorFactory) as cur:
+            cur.execute(query_sql, params_full)
+            rows = cur.fetchall()
 
-    with conn.cursor(row_factory=RealDictCursorFactory) as cur:
-        cur.execute(query_sql, params_full)
-        rows = cur.fetchall()
-
-    results = []
-    for row in rows:
-        results.append({
-            "chunk_id":      row["chunk_id"],
-            "decree_id":     row["decree_id"],
-            "madde_no":      row["madde_no"] or "",
-            "content":       row["content"],
-            "chunk_type":    row["chunk_type"],
-            "decree_title":  row["decree_title"],
-            "gazette_number":row["gazette_number"],
-            "gazette_date":  str(row["gazette_date"]),
-            "category":      row["category"],
-            "similarity":    round(float(row["similarity"]), 4),
-        })
-
-    return results
+        results = []
+        for row in rows:
+            results.append({
+                "chunk_id":      row["chunk_id"],
+                "decree_id":     row["decree_id"],
+                "madde_no":      row["madde_no"] or "",
+                "content":       row["content"],
+                "chunk_type":    row["chunk_type"],
+                "decree_title":  row["decree_title"],
+                "gazette_number":row["gazette_number"],
+                "gazette_date":  str(row["gazette_date"]),
+                "category":      row["category"],
+                "similarity":    round(float(row["similarity"]), 4),
+            })
+        return results
+    finally:
+        own_conn.close()
 
 
 def format_context_for_claude(results: list[dict]) -> str:
